@@ -46,22 +46,11 @@ COMMENT ON TABLE wynagrodzenie IS 'Wynagrodzenie dla pracownika';
 
 --5
 ALTER TABLE godziny ADD COLUMN miesiac INT, ADD COLUMN nr_tyg INT;
+UPDATE godziny SET nr_tyg =  EXTRACT(WEEK FROM data);
+UPDATE godziny SET miesiac =  EXTRACT(MONTH FROM data);
 
 ALTER TABLE wynagrodzenie ALTER COLUMN data TYPE varchar;
 
-CREATE OR REPLACE FUNCTION f_premia()
-RETURNS trigger AS '
-BEGIN
-  IF NEW.rodzaj=''brak'' THEN
-    NEW.kwota:= 0;
-  END IF;
-  RETURN NEW;
-END' LANGUAGE 'plpgsql';
-
-CREATE TRIGGER trg_premia
-BEFORE INSERT ON premia
-FOR EACH ROW
-EXECUTE PROCEDURE f_premia();
 
 INSERT INTO pracownicy(id_pracownika, imie, nazwisko, adres, telefon) VALUES
 (1,'Jan','Nowak','1','943456789'),
@@ -75,9 +64,9 @@ INSERT INTO pracownicy(id_pracownika, imie, nazwisko, adres, telefon) VALUES
 (9,'Justyna','Kar','9','968856789'),
 (10,'Jarek','Zaja','10','990556789');
 
-INSERT INTO premia(rodzaj) VALUES ('brak');
+INSERT INTO premia(id_premii, rodzaj, kwota) VALUES (1,'brak',0);
 INSERT INTO premia(id_premii,rodzaj, kwota) VALUES 
-(1,'premia1', 100),
+
 (2,'premia2', 200),
 (3,'premia3', 300),
 (4,'premia4', 1000),
@@ -100,60 +89,45 @@ INSERT INTO pensja_stanowisko(id_pensji,stanowisko, kwota ) VALUES
 (9,'szefowa', 8500),
 (10,'CEO', 20000);
 
-INSERT INTO  wynagrodzenie(data, id_pracownika, id_pensji, id_premii) VALUES
-('10-10-2020',1,1,1),
-('10-10-2020',2,2,2),
-('10-10-2020',3,3,3),
-('10-10-2020',4,4,4),
-('10-10-2020',5,1,8),
-('10-10-2020',6,5,5),
-('10-10-2020',7,1,7),
-('10-10-2020',8,2,3),
-('10-10-2020',9,9,5),
-('10-10-2020',10,10,10);
+INSERT INTO  wynagrodzenie(id_wynagrodzenie, data, id_pracownika, id_pensji, id_premii) VALUES
+(1,'10-10-2020',1,1,1),
+(2,'10-10-2020',2,2,2),
+(3,'10-10-2020',3,3,3),
+(4,'10-10-2020',4,4,4),
+(5,'10-10-2020',5,1,8),
+(6,'10-10-2020',6,5,5),
+(7,'10-10-2020',7,1,7),
+(8,'10-10-2020',8,2,3),
+(9,'10-10-2020',9,9,5),
+(10,'10-10-2020',10,10,10);
 
-INSERT INTO godziny( data, liczba_godzin,id_pracownika, id_wynagrodzenie) VALUES
-('1-01-2020',180,1,1 ),
-('2-01-2020',180,1,1 ),
-('3-01-2020',160,1,1 ),
-('1-01-2020',163,2,2 ),
-('2-01-2020',190,2,2 ),
-('3-01-2020',167,2,2 ),
-('4-01-2020',178,2,2 ),
-('1-01-2020',198,3,3 ),
-('2-01-2020',190,3,3 ),
-('1-01-2020',189,4,4 ),
-('2-01-2020',150,4,4 ),
-('1-01-2020',150,5,5 ),
-('2-01-2020',160,5,5 ),
-('1-01-2020',160,6,6 ),
-('1-01-2020',160,7,7 ),
-('1-01-2020',160,8,8 ),
-('2-01-2020',160,9,9 ),
-('1-01-2020',180,9,9 )
-('19-01-2020',180,9,9 );
+INSERT INTO godziny( id_godziny, data, liczba_godzin,id_pracownika, id_wynagrodzenie) VALUES
+(1,'1-01-2020',180,1,1 ),
+(2,'2-01-2020',180,1,1 ),
+(3,'3-01-2020',160,1,1 ),
+(4,'1-01-2020',163,2,2 ),
+(5,'2-01-2020',190,2,2 ),
+(6,'3-01-2020',167,2,2 ),
+(7,'4-01-2020',178,2,2 ),
+(8,'1-01-2020',198,3,3 ),
+(9,'2-01-2020',190,3,3 ),
+(10,'1-01-2020',189,4,4 );
 
---6 a-h
+--6 
+--a
 SELECT id_pracownika, nazwisko  FROM pracownicy;
-
-SELECT a.id_pracownika
-FROM pracownicy a INNER JOIN(
-    SELECT tb.id_pracownika FROM pensja_stanowisko ta INNER JOIN
-    wynagrodzenie tb
-    ON ta.id_pensji=tb.id_pensji 
-    WHERE ta.kwota>1000
-) b ON a.id_pracownika=b.id_pracownika;
---
-
-
-SELECT * FROM pracownicy WHERE imie LIKE '%a' AND LOWER(nazwisko) LIKE '%n%';
+--b
+SELECT id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji)
+INNER JOIN premia ON (wynagrodzenie.id_premii = premia.id_premii) WHERE pensja_stanowisko.kwota+premia.kwota > 1000;
+--c
+SELECT id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko
+--d
 SELECT * FROM pracownicy WHERE imie LIKE 'J%'
+--e
+SELECT * FROM pracownicy WHERE imie LIKE '%a' AND LOWER(nazwisko) LIKE '%n%';
 
-SELECT a.imie, a.nazwisko, b.licz FROM pracownicy a INNER JOIN(
-    SELECT ta.id_wynagrodzenie, ta.id_pracownika, SUM(ta.liczba_godzin) AS licz
-    FROM godziny ta GROUP BY ta.id_wynagrodzenie, ta.id_pracownika) b
-ON a.id_pracownika=b.id_pracownika
-WHERE licz>160;
+
+SELECT a.imie, a.nazwisko, b.licz FROM pracownicy a INNER JOIN( SELECT ta.id_wynagrodzenie, ta.id_pracownika, SUM(ta.liczba_godzin) AS licz FROM godziny ta GROUP BY ta.id_wynagrodzenie, ta.id_pracownika) b ON a.id_pracownika=b.id_pracownika WHERE licz>160;
 
 SELECT a.imie, a.nazwisko FROM pracownicy a INNER JOIN(
     SELECT tb.id_pracownika FROM pensja_stanowisko ta INNER JOIN
@@ -201,15 +175,24 @@ ON a.id_pensji=b.id_pensji LEFT JOIN premia c ON a.id_premii=c.id_premii WHERE c
 DELETE FROM pracownicy WHERE id_pracownika IN (SELECT a.id_pracownika FROM pracownicy a INNER JOIN(SELECT tb.id_pracownika FROM pensja_stanowisko ta INNER JOIN wynagrodzenie tb ON ta.id_pensji=tb.id_pensji WHERE ta.kwota<1200) b ON a.id_pracownika=b.id_pracownika);
 
 --8
+--a
 UPDATE pracownicy SET telefon = '+(48)' || telefon;
 
+--b
 UPDATE pracownicy SET telefon = CONCAT(LEFT(telefon, 5), ' ', SUBSTRING(telefon, 6, 3), '-', SUBSTRING(telefon, 9, 3), '-', RIGHT(telefon, 3));
 
+--c
 SELECT UPPER(nazwisko) FROM pracownicy ORDER BY LENGTH(nazwisko) DESC LIMIT 1;
 
+--d
 SELECT a.id_pracownika, a.imie, a.nazwisko, md5(b.kwota::text) FROM pracownicy a INNER JOIN(   SELECT tb.id_pracownika, ta.kwota FROM pensja_stanowisko ta INNER JOIN wynagrodzenie tb ON ta.id_pensji=tb.id_pensji ) b ON a.id_pracownika=b.id_pracownika;
 
 --9
+SELECT FORMAT('Pracownik %s %s, w dniu %s otrzymal pensję calkowitą na kwotę %s zl, gdzie wynagrodzenie zasadnicze wynosilo: %s zl, premia: %s zl, nadgodziny: %s zl',
+pracownik.imie, pracownik.nazwisko, wynagrodzenie.data, pensja_stanowisko.kwota+premia.kwota, pensja_stanowisko.kwota, premia.kwota, ((liczba_godzin-160) * pensja_stanowisko.kwota/160))
+FROM wynagrodzenie INNER JOIN  pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji) INNER JOIN premia ON (wynagrodzenie.id_premii = premia.id_premii);
+
+
 
 
 
