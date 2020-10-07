@@ -120,22 +120,17 @@ SELECT id_pracownika, nazwisko  FROM pracownicy;
 SELECT id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko ON (wynagrodzenie.id_pensji = pensja_stanowisko.id_pensji)
 INNER JOIN premia ON (wynagrodzenie.id_premii = premia.id_premii) WHERE pensja_stanowisko.kwota+premia.kwota > 1000;
 --c
-SELECT id_pracownika FROM wynagrodzenie INNER JOIN pensja_stanowisko
+SELECT imie, nazwisko from pracownicy where id_pracownika =(SELECT id_pracownika FROM wynagrodzenie where id_premii=(SELECT id_premii FROM premia where kwota=0) and id_pensji=(select id_pensji from pensja_stanowisko where kwota < 2000) ) ;
 --d
 SELECT * FROM pracownicy WHERE imie LIKE 'J%'
 --e
 SELECT * FROM pracownicy WHERE imie LIKE '%a' AND LOWER(nazwisko) LIKE '%n%';
-
-
+--f
 SELECT a.imie, a.nazwisko, b.licz FROM pracownicy a INNER JOIN( SELECT ta.id_wynagrodzenie, ta.id_pracownika, SUM(ta.liczba_godzin) AS licz FROM godziny ta GROUP BY ta.id_wynagrodzenie, ta.id_pracownika) b ON a.id_pracownika=b.id_pracownika WHERE licz>160;
-
-SELECT a.imie, a.nazwisko FROM pracownicy a INNER JOIN(
-    SELECT tb.id_pracownika FROM pensja_stanowisko ta INNER JOIN
-    wynagrodzenie tb
-    ON ta.id_pensji=tb.id_pensji 
-    WHERE ta.kwota>=1500 AND ta.kwota<=3000
-) b ON a.id_pracownika=b.id_pracownika;
-
+--g
+SELECT a.imie, a.nazwisko FROM pracownicy a INNER JOIN( SELECT tb.id_pracownika FROM pensja_stanowisko ta INNER JOIN
+    wynagrodzenie tb ON ta.id_pensji=tb.id_pensji WHERE ta.kwota>=1500 AND ta.kwota<=3000) b ON a.id_pracownika=b.id_pracownika;
+--h
 SELECT a.imie, a.nazwisko, b.licz FROM pracownicy a INNER JOIN(
     SELECT ta.id_wynagrodzenie, ta.id_pracownika, SUM(ta.liczba_godzin) AS licz
     FROM godziny ta INNER JOIN(
@@ -149,29 +144,25 @@ SELECT a.imie, a.nazwisko, b.licz FROM pracownicy a INNER JOIN(
 
 
 --7
+--a
 SELECT a.id_pracownika, a.imie, a.nazwisko, b.kwota
 FROM pracownicy a INNER JOIN( SELECT tb.id_pracownika, ta.kwota FROM pensja_stanowisko ta INNER JOIN wynagrodzenie tb ON ta.id_pensji=tb.id_pensji ) b ON a.id_pracownika=b.id_pracownika
 ORDER BY b.kwota;
-
-SELECT a.id_pracownika, a.imie, a.nazwisko, b.kwota, b.premia
-FROM pracownicy a INNER JOIN( SELECT tb.id_pracownika, ta.kwota, tc.kwota AS premia
-    FROM wynagrodzenie tb INNER JOIN pensja_stanowisko ta  
-        ON ta.id_pensji=tb.id_pensji 
-        INNER JOIN premia tc
-        ON tb.id_premii=tc.id_premii) b ON a.id_pracownika=b.id_pracownika
-ORDER BY b.kwota DESC, b.premia DESC;
-
+--b
+SELECT a.id_pracownika, a.imie, a.nazwisko, b.kwota, b.premia FROM pracownicy a INNER JOIN( SELECT tb.id_pracownika, ta.kwota, tc.kwota AS premia
+FROM wynagrodzenie tb INNER JOIN pensja_stanowisko ta ON ta.id_pensji=tb.id_pensji INNER JOIN premia tc ON tb.id_premii=tc.id_premii) b ON a.id_pracownika=b.id_pracownika ORDER BY b.kwota DESC, b.premia DESC;
+--c
 SELECT b.stanowisko, AVG(b.kwota+c.kwota), MIN(b.kwota+c.kwota),MAX(b.kwota+c.kwota) 
 FROM wynagrodzenie a INNER JOIN pensja_stanowisko b ON a.id_pensji=b.id_pensji LEFT JOIN premia c ON a.id_premii=c.id_premii WHERE b.stanowisko LIKE 'kierownik' GROUP BY b.stanowisko;
-
+--d
 SELECT SUM(b.kwota+c.kwota) FROM wynagrodzenie a INNER JOIN pensja_stanowisko b ON a.id_pensji=b.id_pensji LEFT JOIN premia c ON a.id_premii=c.id_premii;
-
+--f
 SELECT b.stanowisko, SUM(b.kwota+c.kwota) FROM wynagrodzenie a INNER JOIN pensja_stanowisko b
 ON a.id_pensji=b.id_pensji LEFT JOIN premia c ON a.id_premii=c.id_premii GROUP BY b.stanowisko;
-
+--g
 SELECT b.stanowisko, COUNT(c.rodzaj) FROM wynagrodzenie a INNER JOIN pensja_stanowisko b
 ON a.id_pensji=b.id_pensji LEFT JOIN premia c ON a.id_premii=c.id_premii WHERE c.rodzaj NOT LIKE 'brak' GROUP BY b.stanowisko;
-
+--h
 DELETE FROM pracownicy WHERE id_pracownika IN (SELECT a.id_pracownika FROM pracownicy a INNER JOIN(SELECT tb.id_pracownika FROM pensja_stanowisko ta INNER JOIN wynagrodzenie tb ON ta.id_pensji=tb.id_pensji WHERE ta.kwota<1200) b ON a.id_pracownika=b.id_pracownika);
 
 --8
