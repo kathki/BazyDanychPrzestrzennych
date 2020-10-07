@@ -210,6 +210,6 @@ SELECT UPPER(nazwisko) FROM pracownicy ORDER BY LENGTH(nazwisko) DESC LIMIT 1;
 SELECT a.id_pracownika, a.imie, a.nazwisko, md5(b.kwota::text) FROM pracownicy a INNER JOIN(   SELECT tb.id_pracownika, ta.kwota FROM pensja_stanowisko ta INNER JOIN wynagrodzenie tb ON ta.id_pensji=tb.id_pensji ) b ON a.id_pracownika=b.id_pracownika;
 
 --9
-FORMAT('Pracownik %s %s, w dniu %s trzymał pensję całkowitą na kwotę %i zł, gdzie wynagrodzeniezasadnicze wynosiło: %i zł, premia: %i zł, nadgodziny: %i zł.) full_name 
+
 
 
