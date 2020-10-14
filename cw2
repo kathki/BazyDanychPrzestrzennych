@@ -1,0 +1,357 @@
+--Poniżej znajduje się skrypt wygenerowany w Vertabelo, zawierający rozwiązania poleceń zadań 1-5. Zadania 6-15 znajdują się pod skryptem
+----------------------------------------------------------------
+
+-- Created by Vertabelo (http://vertabelo.com)
+-- Last modification date: 2020-10-14 12:45:49.138
+
+CREATE SCHEMA sklep;;
+
+-- tables
+-- Table: godziny
+CREATE TABLE godziny (
+    id_godziny int  NOT NULL,
+    data date  NOT NULL,
+    liczba_godzin int  NOT NULL,
+    id_pracownika int  NOT NULL,
+    id_wynagrodzenie int  NULL,
+    CONSTRAINT godziny_pk PRIMARY KEY (id_godziny)
+);
+
+-- Table: pensja_stanowisko
+CREATE TABLE pensja_stanowisko (
+    id_pensji int  NOT NULL,
+    stanowisko varchar  NULL,
+    kwota real  NOT NULL,
+    CONSTRAINT pensja_stanowisko_pk PRIMARY KEY (id_pensji)
+);
+
+-- Table: pracownicy
+CREATE TABLE pracownicy (
+    id_pracownika int  NOT NULL,
+    imie varchar  NOT NULL,
+    nazwisko varchar  NOT NULL,
+    adres varchar  NOT NULL,
+    telefon varchar  NOT NULL,
+    CONSTRAINT pracownicy_pk PRIMARY KEY (id_pracownika)
+);
+
+CREATE INDEX imie_index on pracownicy (imie ASC);
+
+CREATE INDEX nazwisko_index on pracownicy (nazwisko ASC);
+
+-- Table: premia
+CREATE TABLE premia (
+    id_premii int  NOT NULL,
+    rodzaj varchar  NULL,
+    kwota real  NULL,
+    CONSTRAINT premia_pk PRIMARY KEY (id_premii)
+);
+
+-- Table: producenci
+CREATE TABLE Sklep.producenci (
+    id_producenta int  NOT NULL,
+    nazwa_producent varchar  NOT NULL,
+    mail varchar  NOT NULL,
+    telefon varchar  NOT NULL,
+    CONSTRAINT producenci_pk PRIMARY KEY (id_producenta)
+);
+
+-- Table: produkty
+CREATE TABLE Sklep.produkty (
+    id_produkt int  NOT NULL,
+    nazwa_produktu varchar  NOT NULL,
+    cena real  NOT NULL,
+    producenci_id_producenta int  NOT NULL,
+    CONSTRAINT produkty_pk PRIMARY KEY (id_produkt)
+);
+
+-- Table: wynagrodzenie
+CREATE TABLE wynagrodzenie (
+    id_wynagrodzenie int  NOT NULL,
+    data date  NOT NULL,
+    id_pracownika int  NOT NULL,
+    id_pensji int  NOT NULL,
+    id_premii int  NOT NULL,
+    CONSTRAINT wynagrodzenie_pk PRIMARY KEY (id_wynagrodzenie)
+);
+
+-- Table: zamowienia
+CREATE TABLE Sklep.zamowienia (
+    id_zamowienie int  NOT NULL,
+    produkty_id_produkt int  NOT NULL,
+    liczba_sztuk int  NOT NULL,
+    data date  NOT NULL,
+    CONSTRAINT zamowienia_pk PRIMARY KEY (id_zamowienie)
+);
+
+-- foreign keys
+-- Reference: godziny_pracownik_fk (table: godziny)
+ALTER TABLE godziny ADD CONSTRAINT godziny_pracownik_fk
+    FOREIGN KEY (id_pracownika)
+    REFERENCES pracownicy (id_pracownika)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: godziny_wynagrodzenie_fk (table: godziny)
+ALTER TABLE godziny ADD CONSTRAINT godziny_wynagrodzenie_fk
+    FOREIGN KEY (id_wynagrodzenie)
+    REFERENCES wynagrodzenie (id_wynagrodzenie)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: produkty_producenci (table: produkty)
+ALTER TABLE Sklep.produkty ADD CONSTRAINT produkty_producenci
+    FOREIGN KEY (producenci_id_producenta)
+    REFERENCES Sklep.producenci (id_producenta)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: wynagrodzenie_pensja_fk (table: wynagrodzenie)
+ALTER TABLE wynagrodzenie ADD CONSTRAINT wynagrodzenie_pensja_fk
+    FOREIGN KEY (id_pensji)
+    REFERENCES pensja_stanowisko (id_pensji)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: wynagrodzenie_pracownicy_fk (table: wynagrodzenie)
+ALTER TABLE wynagrodzenie ADD CONSTRAINT wynagrodzenie_pracownicy_fk
+    FOREIGN KEY (id_pracownika)
+    REFERENCES pracownicy (id_pracownika)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: wynagrodzenie_premia_fk (table: wynagrodzenie)
+ALTER TABLE wynagrodzenie ADD CONSTRAINT wynagrodzenie_premia_fk
+    FOREIGN KEY (id_premii)
+    REFERENCES premia (id_premii)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- Reference: zamowienia_produkty (table: zamowienia)
+ALTER TABLE Sklep.zamowienia ADD CONSTRAINT zamowienia_produkty
+    FOREIGN KEY (produkty_id_produkt)
+    REFERENCES Sklep.produkty (id_produkt)  
+    NOT DEFERRABLE 
+    INITIALLY IMMEDIATE
+;
+
+-- End of file.
+
+-------------------------------------------------------------
+
+-- uruchamiam powyższy skrypt w mojej bazie danych za pomocą komendy: /i <file name>
+
+--6
+INSERT INTO sklep.producenci(id_producenta, nazwa_producent, mail, telefon) 
+VALUES(1,'polex', 'a@1.pl','123456789'),
+(2,'polpol', 'b@1.pl','343456789'),
+(3,'expol', 'c@1.pl','563456789'),
+(4,'artrans', 'd@1.pl','783456789'),
+(5,'rupol', 'e@1.pl','903456789'),
+(6,'betex', 'f@1.pl','093456789'),
+(7,'ampex', 'g@1.pl','983456789'),
+(8,'transpol', 'h@1.pl','873456789'),
+(9,'betapol', 'i@1.pl','763456789'),
+(10,'metex', 'j@1.pl','543456789');
+
+INSERT INTO sklep.produkty(id_produkt, nazwa_produktu, cena, producenci_id_producenta) 
+VALUES (1,'jablko', 2,1),
+(2,'cytryna',3,2),
+(3,'pomarancza',1.5,10),
+(4,'pomarancza',2,1),
+(5,'groch',1.3,2),
+(6,'cytryna',3,4),
+(7,'banan',2.3,7),
+(8,'groch',1.4,3),
+(9,'pomidor',1.5,3),
+(10,'pomidor',1.7,5),
+(11,'fasola',1.8,6),
+(12,'truskawki',2.3,7),
+(13,'cytryna',2.9,8),
+(14,'pomidor',1.6,9),
+(15,'cytryna',2.2,10);
+
+INSERT INTO sklep.zamowienia(id_zamowienie,produkty_id_produkt,liczba_sztuk,data)
+VALUES(1,1,10,'10-10-2020'),
+(2,2,7,'10-10-2020'),
+(3,3,3,'11-10-2020'),
+(4,4,100,'10-10-2020'),
+(5,5,59,'12-10-2020'),
+(6,6,60,'11-10-2020'),
+(7,7,45,'14-10-2020'),
+(8,8,23,'15-10-2020'),
+(9,10,45,'16-10-2020'),
+(10,9,20,'17-10-2020'),
+(11,12,29,'18-10-2020'),
+(12,11,20,'20-10-2020'),
+(13,13,12,'21-10-2020'),
+(14,14,11,'24-10-2020'),
+(15,15,50,'24-10-2020'),
+(16,15,20,'24-10-2020'),
+(17,14,45,'28-10-2020'),
+(18,13,22,'29-10-2020'),
+(19,12,55,'29-10-2020'),
+(20,3,102,'29-10-2020');
+
+--7
+\! pg_dump s298249 -f <source>/s298249_copy.sql
+
+--8
+DROP DATABASE s298249;
+
+--9
+CREATE DATABASE backup_s298249;
+\! psql -d backup_s298249 -f <source>/s298249_copy.sql
+
+--10
+ALTER DATABASE backup_s298249 RENAME TO s298249;
+
+--11
+--a
+SELECT FORMAT('Producent: %s, liczba_zamowien: %s, wartosc_zamowienia: %s', producenci.nazwa_producent, SUM(zamowienia.liczba_sztuk),zamowienia.liczba_sztuk*produkty.cena) FROM sklep.produkty INNER JOIN sklep.zamowienia ON(produkty.id_produkt = zamowienia.produkty_id_produkt) INNER JOIN sklep.producenci ON( produkty.producenci_id_producenta = producenci.id_producenta) GROUP BY producenci.nazwa_producent, zamowienia.liczba_sztuk*produkty.cena;
+--b
+SELECT FORMAT('Produkt: %s, liczba_zamowien: %s', produkty.nazwa_produktu, sum(zamowienia.liczba_sztuk)) FROM sklep.produkty INNER JOIN sklep.zamowienia ON(produkty.id_produkt = zamowienia.produkty_id_produkt) GROUP BY produkty.nazwa_produktu;
+
+--c
+SELECT * from sklep.produkty NATURAL JOIN sklep.zamowienia;
+
+--d
+--pole data istnieje już w tabeli
+
+--e
+SELECT id_zamowienie, extract(month from data) from sklep.zamowienia where extract(month from data)=1 ;
+
+--f
+
+SELECT sum(liczba_sztuk), extract(dow from data) as dt from sklep.zamowienia group by dt order by dt desc limit 1;
+
+--g
+SELECT produkty_id_produkt, count(produkty_id_produkt) as liczba from sklep.zamowienia group by produkty_id_produkt order by liczba desc;
+
+--12
+--a
+SELECT FORMAT('Produkt %s, którego producentem jest %s , zamowiono %s razy',UPPER(produkty.nazwa_produktu),LOWER(producenci.nazwa_producent), zamowienia.liczba_sztuk) as opis FROM sklep.produkty INNER JOIN sklep.zamowienia ON(produkty.id_produkt = zamowienia.produkty_id_produkt) INNER JOIN sklep.producenci ON (produkty.producenci_id_producenta = producenci.id_producenta) ORDER BY zamowienia.liczba_sztuk;
+
+--b
+SELECT a.id_zamowienie, b.cena*a.liczba_sztuk AS cenaa FROM sklep.zamowienia a INNER JOIN sklep.produkty b ON(a.produkty_id_produkt=b.id_produkt) GROUP BY cenaa,a.id_zamowienie ORDER BY cenaa offset 3;
+
+--c
+CREATE TABLE sklep.klienci(id_klient INT PRIMARY KEY, email VARCHAR, telefon VARCHAR);
+
+--d
+INSERT INTO sklep.klienci(id_klient,email,telefon)
+VALUES(1,'a@k.pl','987654321'),
+(2,'b@k.pl','987654321'),
+(3,'c@k.pl','897654321'),
+(4,'d@k.pl','787654321'),
+(5,'e@k.pl','677654321'),
+(6,'f@k.pl','657654321');
+
+ALTER TABLE sklep.zamowienia ADD COLUMN id_klient INT;
+ALTER TABLE sklep.zamowienia ADD CONSTRAINT klient_zamowienie_fk FOREIGN KEY (id_klient) REFERENCES sklep.klienci(id_klient);
+
+UPDATE sklep.zamowienia SET id_klient = floor(random() *5 +1 );
+
+--e
+SELECT klienci.id_klient, produkty.nazwa_produktu, zamowienia.liczba_sztuk, produkty.cena*zamowienia.liczba_sztuk AS wartosc_zamowienia FROM sklep.zamowienia INNER JOIN sklep.produkty ON (zamowienia.produkty_id_produkt=produkty.id_produkt) INNER JOIN sklep.klienci ON (zamowienia.id_klient=klienci.id_klient); 
+
+--f
+(SELECT FORMAT('NAJCZESCIEJ ZAMAWIAJACY %s, ilosc towarow %s, wartosc %s',klienci.id_klient,SUM(zamowienia.liczba_sztuk),SUM(zamowienia.liczba_sztuk*produkty.cena)) FROM sklep.zamowienia INNER JOIN sklep.klienci ON(zamowienia.id_klient=klienci.id_klient) INNER JOIN sklep.produkty ON(zamowienia.produkty_id_produkt = produkty.id_produkt) GROUP BY klienci.id_klient,zamowienia.liczba_sztuk ORDER BY zamowienia.liczba_sztuk*klienci.id_klient desc LIMIT 1)
+UNION
+(SELECT FORMAT('NAJRZADZIEJ ZAMAWIAJACY %s, ilosc towarow %s, wartosc %s',klienci.id_klient,SUM(zamowienia.liczba_sztuk),SUM(zamowienia.liczba_sztuk*produkty.cena)) FROM sklep.zamowienia INNER JOIN sklep.klienci ON(zamowienia.id_klient=klienci.id_klient) INNER JOIN sklep.produkty ON(zamowienia.produkty_id_produkt = produkty.id_produkt) GROUP BY klienci.id_klient,zamowienia.liczba_sztuk ORDER BY zamowienia.liczba_sztuk*klienci.id_klient  LIMIT 1);
+
+--g
+DELETE FROM sklep.produkty WHERE id_produkt = (SELECT produkty.id_produkt FROM sklep.zamowienia RIGHT OUTER JOIN sklep.produkty ON( zamowienia.produkty_id_produkt = produkty.id_produkt) WHERE zamowienia.produkty_id_produkt IS NULL);
+
+--13
+--a
+CREATE TABLE sklep.numer(liczba INT);
+
+--b
+CREATE SEQUENCE liczba_seq INCREMENT 5 MINVALUE 0 MAXVALUE 125 START 100 CYCLE;
+
+--c
+DO
+$do$
+BEGIN 
+   FOR i IN 1..7 LOOP
+      INSERT INTO sklep.numer(liczba) VALUES (nextval('liczba_seq'));                    
+   END LOOP;
+END
+$do$;
+
+--d
+ALTER SEQUENCE liczba_seq INCREMENT 6;
+
+--e
+SELECT last_value FROM liczba_seq;
+SELECT last_value+increment_by FROM liczba_seq;
+
+--f
+DROP SEQUENCE liczba_seq;
+
+--14
+--a
+SELECT usename AS role_name,
+  CASE 
+     WHEN usesuper AND usecreatedb THEN 
+	   CAST('superuser, create database' AS pg_catalog.text)
+     WHEN usesuper THEN 
+	    CAST('superuser' AS pg_catalog.text)
+     WHEN usecreatedb THEN 
+	    CAST('create database' AS pg_catalog.text)
+     ELSE 
+	    CAST('' AS pg_catalog.text)
+  END role_attributes
+FROM pg_catalog.pg_user
+ORDER BY role_name desc;
+
+--b
+CREATE USER Superuser298249 SUPERUSER;
+CREATE USER guest298249 LOGIN PASSWORD '';
+GRANT CONNECT ON DATABASE s298249 TO guest298249;
+GRANT CONNECT ON SCHEMA sklep,firma TO guest298249;
+GRANT SELECT ALL ON ALL TABLES IN SCHEMA sklep, firma TO guest298249;
+
+--c
+ALTER USER Superuser298249  WITH NOSUPERUSER;
+ALTER USER Superuser298249 RENAME TO student;
+ALTER USER student PASWORD '';
+GRANT CONNECT ON DATABASE s298249 TO student;
+GRANT CONNECT ON SCHEMA sklep,firma TO student;
+GRANT SELECT ALL ON ALL TABLES IN SCHEMA sklep, firma TO student;
+DROP USER guest298249;
+
+--15
+--a
+BEGIN;
+UPDATE sklep.produkty SET cena=cena+10;
+COMMIT;
+
+--b
+BEGIN;
+UPDATE sklep.produkty SET cena=cena*1.1 WHERE id_produkt = 3;
+SAVEPOINT S1;
+UPDATE sklep.zamowienia SET liczba_sztuk=liczba_sztuk*1.25;
+SAVEPOINT S2;
+DELETE CASCADE FROM sklep.klienci WHERE id_klient = (SELECT zamowienia.id_klient FROM sklep.zamowienia INNER JOIN sklep.produkty ON(zamowienia.produkty_id_produkt = produkty.id_produkt) GROUP BY zamowienia.id_klient ORDER BY SUM(zamowienia.liczba_sztuk) DESC LIMIT 1);
+ROLLBACK TO SAVEPOINT S1;
+ROLLBACK TO SAVEPOINT S2;
+ROLLBACK;
+
+--c
+CREATE OR REPLACE FUNCTION f_udzial()
+RETURNS TABLE(x text)
+AS $$
+BEGIN
+RETURN QUERY SELECT FORMAT('%s - %s%%', produkty.nazwa_produktu,SUM(zamowienia.liczba_sztuk)*100/(SELECT SUM(liczba_sztuk) from sklep.zamowienia) ) FROM sklep.zamowienia INNER JOIN sklep.produkty ON (zamowienia.produkty_id_produkt = produkty.id_produkt) GROUP BY produkty.nazwa_produktu;
+END;
+$$ LANGUAGE plpgsql;
+
+SELECT f_udzial();
