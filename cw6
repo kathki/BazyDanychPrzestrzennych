@@ -1,0 +1,64 @@
+--1
+Zmiana koloru:
+warstwa trees -> właściwości -> styl -> wartość unikalna -> VEGDESC -> klasyfikuj -> wybór koloru
+
+Pole powierzchni:
+Z wykorzystaniem wtyczki Group Stats -> Po uruchomieniu, wybieram warstwę trees ->w Values przesuwam funkcję sum i pole AREA_KM2, a do Rows VEGDESC -> Calculate
+VEGDESC	None
+Deciduous	165377.798
+Evergreen	164578.91900000005
+Mixed Trees	189273.32699999996
+
+--2
+wektor -> podziel warstwę wektorową -> warstwa trees, pole z unikalnym id VEGDESC -> pliki zostaną stworzone we wskazanej lokalizacji geometrii
+
+--3
+Długość linii kolejowych dla regionu Matanuska-Susitna:
+tabela warości regions -> nazwa szukanego obszaru -> kopiujemy do schowka
+edycja -> wklej obiekty jako -> nowa warstwa (wybieramy nazwę)
+wektor -> geoprocesing -> przytnij -> railroads i nasze nowe pole -> uruchom
+kalkulator pól -> $length -> 34883.24270922694
+
+--4
+Na jakiej średniej wysokości nad poziomem morza położone są lotniska o charakterze
+militarnym:
+wtyczka Group Stats -> po uruchomieinu wybrać warstwę airports -> Rows to Use, a Values average i ELEV, filter ["USE"  LIKE 'Military'] : Military	593.25
+
+Żeby policzyć ilość wartość count zamiast average: Military	8
+
+Usuń z warstwy airports lotniska o charakterze militarnym,
+które są dodatkowo położone powyżej 1400 m n.p.m:
+Dopisujemy warunek "ELEV">1400 - mamy tylko jedno takie lotnisko.
+By je usunąć -> show selected on map -> włączamy tryb edycji -> usuń zaznaczone
+
+--5
+Wyodrębniamy obszar jako warstwa i robimy przycięcie (jak w zad 3)
+Wynik : 11 tabeli budynków w Bristol-Bay
+
+100 km od rzek: rivers -> bufor 100 km
+przycięcie poprzedniego obszaru i bufora to nasz wynik (widać, że wszytkie budynki i większość terenu alaski znajduje się bliżej niż 100 km od rzek)
+
+--6
+wektor -> narzędzia analizy -> przecięcia linii -> majrivers i railroads 
+Wynik : 8 przecięć
+
+--7
+railroads -> wektor -> narzędzia geometrii -> wydobądź wieżchołki
+Wynik : 662 przecięć
+
+--8
+tworzymy bufory dla lotnisk i linii kolejowych (jak w zad 3 i 5)
+wektor -> narzędzia geoprocesingu -> różnica -> bufor lotnisk - bufor linii kolejowych.
+
+Uzyskana geometria to rozwiązanie zadania - nie licząc odległości od dróg - nie mamy warstwy dróg.
+
+--9
+Po uproszczeniu z tolerancją 100m
+- powierzchnia zmienia się z 24719.761 km2 - 24721.591 km2
+różnica wynosi: 1.830 km2
+- wierzchołki -z 7 469 na 6 175
+różnica: 1294, 17% redukcji
+
+
+
+
