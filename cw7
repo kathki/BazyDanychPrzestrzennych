@@ -1,0 +1,193 @@
+--
+sudo -u postgres pg_restore --dbname=rASter --verbose postgis_rASter.backup 
+
+--ładowanie danych rAStrowych
+rASter2pgsql -s 3763 -N -32767 -t 100x100 -I -C -M -d srtm_1arc_v3.tif rASters.dem > dem.sql
+
+rASter2pgsql -s 3763 -N -32767 -t 100x100 -I -C -M -d srtm_1arc_v3.tif rASters.dem | psql -d rASter -h localhost -U postgres -p 5432
+
+rASter2pgsql -s 3763 -N -32767 -t 128x128 -I -C -M -d Landsat8_L1TP_RGBN.tif rASters.landsat8 | psql -d rASter -h localhost -U postgres -p 5432
+
+--Tworzenie rAStrów z istniejących rAStrów i interakcja z wektorami
+--Przykład 1
+CREATE TABLE kaminska.intersects AS 
+SELECT a.rASt, b.municipality 
+FROM rASters.dem AS a, vectors.porto_parishes AS b WHERE ST_Intersects(a.rASt, b.geom) AND lower(b.municipality)like 'porto';
+
+ALTER TABLE kaminska.intersects ADD COLUMN rid SERIAL PRIMARY KEY;
+
+CREATE INDEX idx_intersects_rASt_gist ON kaminska.intersects USING gist (ST_ConvexHull(rASt));
+
+--schema::name table_name::name rASter_column::name
+SELECT AddRASterConstraints('kaminska'::name, 
+'intersects'::name,'rASt'::name);
+
+--Przykład 2
+CREATE TABLE kaminska.clip AS
+SELECT ST_Clip(a.rASt, b.geom, TRUE), b.municipality 
+FROM rASters.dem AS a, vectors.porto_parishes AS b 
+WHERE ST_Intersects(a.rASt, b.geom) AND lower(b.municipality) like 'porto';
+
+--Przykład 3
+CREATE TABLE kaminska.union AS 
+SELECT ST_Union(ST_Clip(a.rASt, b.geom, TRUE))
+FROM rASters.dem AS a, vectors.porto_parishes AS b 
+WHERE lower(b.municipality) like 'porto' and ST_Intersects(b.geom,a.rASt);
+
+--Tworzenie rAStrów z wektorów (rAStrowanie)
+--Przykład 1
+CREATE TABLE kaminska.porto_parishes AS
+WITH r AS (
+SELECT rASt FROM rASters.dem 
+LIMIT 1)
+
+--Przykład 2
+SELECT ST_ASRASter(a.geom,r.rASt,'8BUI',a.id,-32767) AS rASt
+FROM vectors.porto_parishes AS a, r WHERE lower(a.municipality) like 'porto';
+
+--Przykład 3
+DROP TABLE kaminska.porto_parishes; 
+CREATE TABLE kaminska.porto_parishes AS
+WITH r AS (
+SELECT rASt FROM rASters.dem
+ LIMIT 1)
+SELECT ST_Tile(st_union(ST_ASRASter(a.geom,r.rASt,'8BUI',a.id,-32767)),128,128,TRUE,-32767) AS rASt
+FROM vectors.porto_parishes AS a, r
+WHERE lower(a.municipality) like 'porto';
+
+--Konwertowanie rAStrów na wektory (wektoryzowanie)
+--Przykład 1
+CREATE TABLE kaminska.intersection AS
+ SELECT 
+a.rid,(ST_Intersection(b.geom,a.rASt)).geom,(ST_Intersection(b.geom,a.rASt)
+).val
+FROM rASters.landsat8 AS a, vectors.porto_parishes AS b 
+WHERE lower(b.parish)like 'paranhos' and ST_Intersects(b.geom,a.rASt);
+
+--Przykład 2
+CREATE TABLE kaminska.dumppolygons AS
+SELECT 
+a.rid,(ST_DumpASPolygons(ST_Clip(a.rASt,b.geom))).geom,(ST_DumpASPolygons(ST_Clip(a.rASt,b.geom))).val
+FROM rASters.landsat8 AS a, vectors.porto_parishes AS b 
+WHERE lower(b.parish) like 'paranhos' and ST_Intersects(b.geom,a.rASt);
+
+--Analiza rAStrów
+--Przykład 1
+CREATE TABLE kaminska.landsat_nir AS
+SELECT rid, ST_Band(rASt,4) AS rASt
+FROM rASters.landsat8;
+
+--Przykład 2
+CREATE TABLE kaminska.paranhos_dem AS
+SELECT a.rid,ST_Clip(a.rASt, b.geom,TRUE) AS rASt
+FROM rASters.dem AS a, vectors.porto_parishes AS b
+WHERE lower(b.parish)like 'paranhos' and ST_Intersects(b.geom,a.rASt);
+
+--Przykład 3
+CREATE TABLE kaminska.paranhos_slope AS
+SELECT a.rid,ST_Slope(a.rASt,1,'32BF','PERCENTAGE') AS rASt
+FROM kaminska.paranhos_dem AS a;
+
+--Przykład 4
+CREATE TABLE kaminska.paranhos_slope_reclASs AS
+SELECT a.rid,ST_ReclASs(a.rASt,1,']0-15]:1, (15-30]:2, (30-9999:3', '32BF',0)
+FROM kaminska.paranhos_slope AS a;
+
+--Przykład 5
+SELECT st_summarystats(a.rASt) AS stats
+FROM kaminska.paranhos_dem AS a;
+
+--Przykład 6
+SELECT st_summarystats(ST_Union(a.rASt))
+FROM kaminska.paranhos_dem AS a;
+
+--Przykład 7
+WITH t AS (
+SELECT st_summarystats(ST_Union(a.rASt)) AS stats
+FROM kaminska.paranhos_dem AS a)
+SELECT (stats).min,(stats).max,(stats).mean FROM t;
+
+--Przykład 8
+WITH t AS (
+SELECT b.parish AS parish, st_summarystats(ST_Union(ST_Clip(a.rASt, b.geom,TRUE))) AS stats FROM rASters.dem AS a, vectors.porto_parishes AS b
+WHERE lower(b.municipality) like 'porto' and ST_Intersects(b.geom,a.rASt)
+group by b.parish)
+SELECT parish,(stats).min,(stats).max,(stats).mean FROM t;
+
+--Przykład 9
+SELECT b.name,st_value(a.rASt,(ST_Dump(b.geom)).geom)
+FROM 
+rASters.dem a, vectors.places AS b
+WHERE ST_Intersects(a.rASt,b.geom)
+ORDER BY b.name;
+
+--Przykład 10
+CREATE TABLE kaminska.tpi30 AS
+SELECT ST_TPI(a.rASt,1) AS rASt
+FROM rASters.dem a;
+
+CREATE INDEX idx_tpi30_rASt_gist ON kaminska.tpi30
+USING gist (ST_ConvexHull(rASt));
+
+SELECT AddRASterConstraints('kaminska'::name,'tpi30'::name,'rASt'::name);
+
+--Przykład do samodzielnego rozwiązania
+--ST_TPI dla gminy Porto
+CREATE TABLE kaminska.tpi30_porto ASSELECT ST_TPI(a.rASt,1) AS rASt
+FROM rASters.dem AS a, vectors.porto_parishes AS b WHERE ST_Intersects(a.rASt, b.geom) AND lower(b.municipality)like 'porto';
+
+CREATE INDEX idx_tpi30_porto_rASt_gist ON kaminska.tpi30_porto
+USING gist (ST_ConvexHull(rASt));
+
+SELECT AddRASterConstraints('kaminska'::name, 'tpi30_porto'::name,'rASt'::name);
+
+
+--Algebra map
+--Przykład 1
+CREATE TABLE kaminska.porto_ndvi AS 
+WITH r AS (
+SELECT a.rid,ST_Clip(a.rASt, b.geom,TRUE) AS rASt
+FROM rASters.landsat8 AS a, vectors.porto_parishes AS b
+WHERE lower(b.municipality)like 'porto' and 
+ST_Intersects(b.geom,a.rASt))
+	SELECT
+	r.rid,ST_MapAlgebra(
+	r.rASt, 1,
+	r.rASt, 4,
+	'([rASt2.val] -[rASt1.val]) / ([rASt2.val] + [rASt1.val])::float','32BF') AS rASt
+	FROM r;
+
+CREATE INDEX idx_porto_ndvi_rASt_gist ON kaminska.porto_ndvi USING gist (ST_ConvexHull(rASt));
+SELECT AddRASterConstraints('kaminska'::name, 'porto_ndvi'::name,'rASt'::name);
+
+--Przykład 2 – Funkcja zwrotna
+CREATE OR REPLACE FUNCTION kaminska.ndvi(value double precision [] [] [], pos integer [][],VARIADIC userargs text [])
+RETURNS double precision AS $$ BEGIN--RAISE NOTICE 'Pixel Value: %', value [1][1][1];-->For debug purposes
+RETURN (value [2][1][1] -value [1][1][1])/(value [2][1][1]+value [1][1][1]); --> NDVI calculation!END; $$ LANGUAGE 'plpgsql' IMMUTABLE COST 1000;
+
+CREATE TABLE kaminska.porto_ndvi2 AS WITH r AS (SELECT a.rid,ST_Clip(a.rASt, b.geom,TRUE) AS rAStFROM rASters.landsat8 AS a, vectors.porto_parishes AS b
+WHERE lower(b.municipality) like 'porto' and ST_Intersects(b.geom,a.rASt))SELECTr.rid,ST_MapAlgebra(r.rASt, ARRAY[1,4],'kaminska.ndvi(double precision[], integer[],text[])'::regprocedure, --> This is the function!'32BF'::text) AS rASt
+FROM r;
+
+CREATE INDEX idx_porto_ndvi2_rASt_gist ON kaminska.porto_ndvi2
+USING gist (ST_ConvexHull(rASt));
+
+SELECT AddRASterConstraints('kaminska'::name, 'porto_ndvi2'::name,'rASt'::name);
+
+--Eksport Danych
+--Przykład 1
+SELECT ST_ASTiff(ST_Union(rASt))FROM kaminska.porto_ndvi;
+
+--Przykład 2
+SELECT ST_ASGDALRASter(ST_Union(rASt), 'GTiff',  ARRAY['COMPRESS=DEFLATE', 'PREDICTOR=2', 'PZLEVEL=9'])FROM kaminska.porto_ndvi;
+SELECT ST_GDALDrivers();
+
+--Przykład 3 - Zapis na dysku
+CREATE TABLE tmp_out AS
+SELECT lo_from_bytea(0,ST_AsGDALRaster(ST_Union(st_slope),'GTiff', ARRAY['COMPRESS=DEFLATE', 'PREDICTOR=2', 'PZLEVEL=9'])) AS loid 
+FROM kaminska.paranhos_slope;
+		
+SELECT lo_export(loid, 'D:\Bazy danych przestrzennych\paranhos_slope.tiff') FROM tmp_out;
+SELECT lo_unlink(loid) FROM tmp_out; 
+
+
